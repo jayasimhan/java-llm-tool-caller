@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class LLMToolCaller {
     
     private static final String OPENCODEZEN_API_KEY = System.getenv("OPENCODEZEN_API_KEY");
-    private static final String API_URL = "https://api.opencodezen.ai/v1/chat/completions";
+    private static final String API_URL = "https://opencode.ai/zen/v1/chat/completions";
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     
@@ -72,7 +72,7 @@ public class LLMToolCaller {
         
         // Build the initial request
         ObjectNode requestBody = objectMapper.createObjectNode();
-        requestBody.put("model", "kimi-2.5");
+        requestBody.put("model", "kimi-k2.5");
         
         ArrayNode messages = requestBody.putArray("messages");
         ObjectNode userMsg = messages.addObject();
