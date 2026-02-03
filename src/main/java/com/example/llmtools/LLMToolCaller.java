@@ -23,11 +23,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * 
  * Note: You need to add these dependencies:
  * - Jackson (for JSON handling)
+ * 
+ * Using OpenCodeZen API with Kimi 2.5 model
  */
 public class LLMToolCaller {
     
-    private static final String OPENAI_API_KEY = System.getenv("OPENAI_API_KEY");
-    private static final String API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String OPENCODEZEN_API_KEY = System.getenv("OPENCODEZEN_API_KEY");
+    private static final String API_URL = "https://api.opencodezen.ai/v1/chat/completions";
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     
@@ -41,8 +43,8 @@ public class LLMToolCaller {
      */
     public static void main(String[] args) throws Exception {
         // Check for API key
-        if (OPENAI_API_KEY == null || OPENAI_API_KEY.isEmpty()) {
-            System.err.println("Please set OPENAI_API_KEY environment variable");
+        if (OPENCODEZEN_API_KEY == null || OPENCODEZEN_API_KEY.isEmpty()) {
+            System.err.println("Please set OPENCODEZEN_API_KEY environment variable");
             System.exit(1);
         }
         
@@ -70,7 +72,7 @@ public class LLMToolCaller {
         
         // Build the initial request
         ObjectNode requestBody = objectMapper.createObjectNode();
-        requestBody.put("model", "gpt-4o");  // or gpt-3.5-turbo
+        requestBody.put("model", "kimi-2.5");
         
         ArrayNode messages = requestBody.putArray("messages");
         ObjectNode userMsg = messages.addObject();
@@ -85,7 +87,7 @@ public class LLMToolCaller {
         requestBody.put("tool_choice", "auto");
         
         // Call the LLM
-        String llmResponse = callOpenAI(requestBody);
+        String llmResponse = callOpenCodeZen(requestBody);
         JsonNode responseJson = objectMapper.readTree(llmResponse);
         
         // Check if the LLM wants to call tools
@@ -192,7 +194,7 @@ public class LLMToolCaller {
         newRequest.remove("tool_choice");
         
         // Call LLM again with results
-        String llmResponse = callOpenAI(newRequest);
+        String llmResponse = callOpenCodeZen(newRequest);
         JsonNode responseJson = objectMapper.readTree(llmResponse);
         
         return responseJson.get("choices").get(0).get("message").get("content").asText();
@@ -311,15 +313,15 @@ public class LLMToolCaller {
     }
     
     /**
-     * HTTP Client to call OpenAI API
+     * HTTP Client to call OpenCodeZen API
      */
-    private String callOpenAI(ObjectNode requestBody) throws Exception {
+    private String callOpenCodeZen(ObjectNode requestBody) throws Exception {
         String jsonBody = objectMapper.writeValueAsString(requestBody);
         
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(API_URL))
             .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + OPENAI_API_KEY)
+            .header("Authorization", "Bearer " + OPENCODEZEN_API_KEY)
             .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
             .build();
         

@@ -1,6 +1,6 @@
 # LLM Tool Caller - Java
 
-A simple Java application demonstrating how to use LLM (OpenAI) tool calling capabilities. This example shows how to:
+A simple Java application demonstrating how to use LLM (OpenCodeZen with Kimi 2.5) tool calling capabilities. This example shows how to:
 
 1. **Define tool schemas** - Tell the LLM what tools are available
 2. **Handle tool calls** - Parse and route LLM tool requests
@@ -14,12 +14,13 @@ A simple Java application demonstrating how to use LLM (OpenAI) tool calling cap
 - Proper JSON handling with Jackson
 - HTTP client using Java's native HttpClient
 - Full conversation flow with tool results
+- Uses OpenCodeZen API with Kimi 2.5 model
 
 ## Prerequisites
 
 - Java 11 or higher
 - Maven 3.6+
-- OpenAI API key
+- OpenCodeZen API key
 
 ## Quick Start
 
@@ -33,12 +34,12 @@ cd llm-tool-caller
 ### 2. Set API Key
 
 ```bash
-export OPENAI_API_KEY="your-api-key-here"
+export OPENCODEZEN_API_KEY="your-api-key-here"
 ```
 
 Or create a `.env` file:
 ```
-OPENAI_API_KEY=your-api-key-here
+OPENCODEZEN_API_KEY=your-api-key-here
 ```
 
 ### 3. Build and Run
@@ -79,17 +80,17 @@ Final response: 150.0 divided by 5.0 equals 30.0.
 ## How It Works
 
 ```
-User Input → LLM API (with tool definitions)
-                     ↓
-         LLM decides to call tool(s)
-                     ↓
-         Parse tool calls & execute
-                     ↓
-         Send results back to LLM
-                     ↓
-         LLM generates natural response
-                     ↓
-         Return to user
+User Input → OpenCodeZen API (with tool definitions)
+                      ↓
+         Kimi 2.5 decides to call tool(s)
+                      ↓
+          Parse tool calls & execute
+                      ↓
+          Send results back to LLM
+                      ↓
+          Kimi 2.5 generates natural response
+                      ↓
+          Return to user
 ```
 
 ### Key Code Flow
@@ -185,6 +186,7 @@ llm-tool-caller/
 ├── target/
 │   └── llm-tool-caller-1.0-SNAPSHOT.jar
 ├── .gitignore
+├── .env.example
 ├── pom.xml
 └── README.md
 ```
@@ -192,7 +194,7 @@ llm-tool-caller/
 ## Dependencies
 
 - **Jackson** (2.15.2) - JSON parsing
-- **OpenAI API** - Uses Chat Completions endpoint
+- **OpenCodeZen API** - Uses Chat Completions endpoint with Kimi 2.5
 
 No external HTTP client needed - uses Java 11+ native `HttpClient`.
 
@@ -211,12 +213,12 @@ This makes 1-2 API calls per interaction:
 - 1 call: LLM decides if tools needed
 - 1 additional call: If tools used, send results back
 
-Monitor your OpenAI usage dashboard for costs.
+Monitor your OpenCodeZen usage dashboard for costs.
 
 ## Troubleshooting
 
-**Error: "Please set OPENAI_API_KEY environment variable"**
-- Ensure OPENAI_API_KEY is set in your shell
+**Error: "Please set OPENCODEZEN_API_KEY environment variable"**
+- Ensure OPENCODEZEN_API_KEY is set in your shell
 
 **Error: "API Error: 401"**
 - Invalid API key - check your key is correct
@@ -240,7 +242,7 @@ This is a simple starter project. Feel free to:
 
 ## Resources
 
-- [OpenAI Tool Calling Guide](https://platform.openai.com/docs/guides/function-calling)
+- [OpenCodeZen Documentation](https://opencodezen.ai/docs)
 - [Jackson Documentation](https://github.com/FasterXML/jackson)
 - [Java HttpClient](https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpClient.html)
 
