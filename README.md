@@ -1,6 +1,6 @@
 # LLM Tool Caller - Java
 
-A simple Java application demonstrating how to use LLM (OpenCodeZen with Kimi 2.5) tool calling capabilities. This example shows how to:
+A simple Java application demonstrating how to use LLM (OpenCodeZen with Kimi 2.5) tool calling capabilities with a **real API**. This example shows how to:
 
 1. **Define tool schemas** - Tell the LLM what tools are available
 2. **Handle tool calls** - Parse and route LLM tool requests
@@ -9,8 +9,8 @@ A simple Java application demonstrating how to use LLM (OpenCodeZen with Kimi 2.
 
 ## Features
 
-- Weather lookup tool (simulated API)
-- Calculator tool (math operations)
+- **Star Wars character search** (real SWAPI - no API key required!)
+- **Calculator tool** (math operations)
 - Proper JSON handling with Jackson
 - HTTP client using Java's native HttpClient
 - Full conversation flow with tool results
@@ -56,16 +56,26 @@ mvn exec:java -Dexec.mainClass="com.example.llmtools.LLMToolCaller"
 
 ## Example Usage
 
-```
-Example: Ask about weather (e.g., 'What's the weather in London?')
-Your question: What's the temperature in Paris?
+### Star Wars Character Search (Real API)
 
-[Executing tool: get_weather]
-  Location: Paris
-  Unit: celsius
-
-Final response: The current temperature in Paris is 22.5°C with partly cloudy conditions.
 ```
+Example: Ask about Star Wars (e.g., 'Tell me about Luke Skywalker')
+Your question: Tell me about Darth Vader
+
+[Executing tool: search_starwars_character]
+  Searching for: Darth Vader
+
+Final response: Darth Vader is one of the most iconic villains in cinematic history...
+[Full character description with height, mass, birth year, etc.]
+```
+
+**Try these:**
+- "Who is Luke Skywalker?"
+- "Tell me about Princess Leia"
+- "What can you tell me about Yoda?"
+- "Give me info on Han Solo"
+
+### Calculator Tool
 
 ```
 Your question: Calculate 150 divided by 5
@@ -82,9 +92,11 @@ Final response: 150.0 divided by 5.0 equals 30.0.
 ```
 User Input → OpenCodeZen API (with tool definitions)
                       ↓
-         Kimi 2.5 decides to call tool(s)
+          Kimi 2.5 decides to call tool(s)
                       ↓
-          Parse tool calls & execute
+           Parse tool calls & execute
+                      ↓
+    Real API call to SWAPI (Star Wars API)
                       ↓
           Send results back to LLM
                       ↓
@@ -101,7 +113,7 @@ User Input → OpenCodeZen API (with tool definitions)
 
 2. **`executeToolCalls(toolCalls)`** - Parse and execute
    - Extracts tool name and arguments from LLM response
-   - Routes to corresponding method (`getWeather`, `calculate`)
+   - Routes to corresponding method (`searchStarWarsCharacter`, `calculate`)
    - Returns results as JSON array
 
 3. **`getFinalResponse(...)`** - Complete conversation
@@ -109,8 +121,29 @@ User Input → OpenCodeZen API (with tool definitions)
    - Calls LLM again to generate natural response
 
 4. **Tool Methods** - Your API implementations
-   - `getWeather(location, unit)` - Call weather API
+   - `searchStarWarsCharacter(name)` - Calls real SWAPI at https://swapi.dev
    - `calculate(operation, a, b)` - Math operations
+
+## The Star Wars API (SWAPI)
+
+The **Star Wars API** (https://swapi.dev) is a completely free, open REST API that provides Star Wars data. No API key required!
+
+**What it returns:**
+- Character name, height, mass
+- Hair color, eye color, skin color
+- Birth year, gender
+- Homeworld, films, species, vehicles, starships
+
+**Example API call:**
+```
+GET https://swapi.dev/api/people/?search=luke
+```
+
+This demonstrates how to:
+- Make HTTP GET requests to external APIs
+- Parse JSON responses
+- Handle errors gracefully
+- Transform API data into natural language
 
 ## Adding Your Own Tools
 
@@ -144,7 +177,7 @@ private Map<String, Object> getMyNewTool() {
 
 ```java
 List<Map<String, Object>> tools = List.of(
-    getWeatherTool(),
+    getStarWarsTool(),
     getCalculatorTool(),
     getMyNewTool()  // Add here
 );
@@ -155,8 +188,15 @@ List<Map<String, Object>> tools = List.of(
 ```java
 private String myToolMethod(String param1) {
     // Your API call here
-    System.out.println("[Executing tool: my_tool]");
-    return "Result from API call";
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create("https://api.example.com/" + param1))
+        .GET()
+        .build();
+    
+    HttpResponse<String> response = httpClient.send(request, 
+        HttpResponse.BodyHandlers.ofString());
+    
+    return response.body();
 }
 ```
 
@@ -164,7 +204,7 @@ private String myToolMethod(String param1) {
 
 ```java
 switch (toolName) {
-    case "get_weather": ...
+    case "search_starwars_character": ...
     case "calculate": ...
     case "my_tool":  // Add here
         result = myToolMethod(args.get("param1").asText());
@@ -195,12 +235,14 @@ llm-tool-caller/
 
 - **Jackson** (2.15.2) - JSON parsing
 - **OpenCodeZen API** - Uses Chat Completions endpoint with Kimi 2.5
+- **SWAPI** - Free Star Wars REST API
 
 No external HTTP client needed - uses Java 11+ native `HttpClient`.
 
 ## Customization Ideas
 
-- **Real weather API** - Integrate OpenWeatherMap or WeatherAPI
+- **Other free APIs** - Pokemon API, Rick and Morty API, JSONPlaceholder
+- **Weather API** - OpenWeatherMap (requires API key)
 - **Database queries** - SQL tool to query databases
 - **File operations** - Read/write files based on LLM requests
 - **API integrations** - Slack, GitHub, Jira, etc.
@@ -209,9 +251,11 @@ No external HTTP client needed - uses Java 11+ native `HttpClient`.
 
 ## API Costs
 
-This makes 1-2 API calls per interaction:
+This makes 1-2 API calls to OpenCodeZen per interaction:
 - 1 call: LLM decides if tools needed
 - 1 additional call: If tools used, send results back
+
+The Star Wars API (SWAPI) is completely free and requires no API key!
 
 Monitor your OpenCodeZen usage dashboard for costs.
 
@@ -226,6 +270,9 @@ Monitor your OpenCodeZen usage dashboard for costs.
 **Error: "Unknown tool: xxx"**
 - The LLM called a tool not in your switch statement
 - Add handling in `executeToolCalls`
+
+**Error: "No character found"**
+- Try different spellings or partial names (e.g., "Luke" instead of "Luke Skywalker")
 
 ## License
 
@@ -243,6 +290,7 @@ This is a simple starter project. Feel free to:
 ## Resources
 
 - [OpenCodeZen Documentation](https://opencodezen.ai/docs)
+- [Star Wars API (SWAPI)](https://swapi.dev)
 - [Jackson Documentation](https://github.com/FasterXML/jackson)
 - [Java HttpClient](https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpClient.html)
 

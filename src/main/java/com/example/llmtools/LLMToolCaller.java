@@ -50,8 +50,8 @@ public class LLMToolCaller {
         
         LLMToolCaller caller = new LLMToolCaller();
         
-        // Example: User asks about weather
-        System.out.println("Example: Ask about weather (e.g., 'What's the weather in London?')");
+        // Example: User asks about Star Wars
+        System.out.println("Example: Ask about Star Wars (e.g., 'Tell me about Luke Skywalker')");
         System.out.print("Your question: ");
         String userInput = new Scanner(System.in).nextLine();
         
@@ -66,7 +66,7 @@ public class LLMToolCaller {
     public String chatWithTools(String userMessage) throws Exception {
         // Define available tools
         List<Map<String, Object>> tools = List.of(
-            getWeatherTool(),
+            getStarWarsTool(),
             getCalculatorTool()
         );
         
@@ -130,10 +130,9 @@ public class LLMToolCaller {
             String result;
             try {
                 switch (toolName) {
-                    case "get_weather":
-                        result = getWeather(
-                            args.get("location").asText(),
-                            args.has("unit") ? args.get("unit").asText() : "celsius"
+                    case "search_starwars_character":
+                        result = searchStarWarsCharacter(
+                            args.get("name").asText()
                         );
                         break;
                     case "calculate":
@@ -205,25 +204,62 @@ public class LLMToolCaller {
      * These are the methods that implement the API calls for each tool
      */
     
-    private String getWeather(String location, String unit) throws Exception {
-        // In a real app, you would call a weather API like OpenWeatherMap
-        // For this example, we'll simulate the API call
-        System.out.println("\n[Executing tool: get_weather]");
-        System.out.println("  Location: " + location);
-        System.out.println("  Unit: " + unit);
+    private static final String SWAPI_URL = "https://swapi.dev/api/people/?search=";
+    
+    /**
+     * Search for a Star Wars character using the SWAPI (Star Wars API)
+     * This calls a real public API - no API key required!
+     */
+    private String searchStarWarsCharacter(String name) throws Exception {
+        System.out.println("\n[Executing tool: search_starwars_character]");
+        System.out.println("  Searching for: " + name);
         
-        // Simulate API call delay
-        Thread.sleep(500);
+        // Build the API URL
+        String searchUrl = SWAPI_URL + name.replace(" ", "%20");
         
-        // Simulate response (in real app: call actual weather API)
-        double temp = 22.5;  // Simulated temperature
-        if (unit.equals("fahrenheit")) {
-            temp = temp * 9/5 + 32;
+        // Make the HTTP request
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(searchUrl))
+            .header("Accept", "application/json")
+            .GET()
+            .build();
+        
+        HttpResponse<String> response = httpClient.send(request, 
+            HttpResponse.BodyHandlers.ofString());
+        
+        if (response.statusCode() != 200) {
+            return "Error: API returned status " + response.statusCode();
         }
         
-        String unitLabel = unit.equals("fahrenheit") ? "°F" : "°C";
-        return String.format("Current weather in %s: %s, %.1f%s", 
-            location, "Partly cloudy", temp, unitLabel);
+        // Parse the response
+        JsonNode swapiResponse = objectMapper.readTree(response.body());
+        JsonNode results = swapiResponse.get("results");
+        
+        if (results == null || results.size() == 0) {
+            return "No character found with name: " + name;
+        }
+        
+        // Get the first result
+        JsonNode character = results.get(0);
+        String charName = character.get("name").asText();
+        String height = character.get("height").asText();
+        String mass = character.get("mass").asText();
+        String hairColor = character.get("hair_color").asText();
+        String eyeColor = character.get("eye_color").asText();
+        String birthYear = character.get("birth_year").asText();
+        String gender = character.get("gender").asText();
+        
+        // Format the result
+        return String.format(
+            "Character: %s\n" +
+            "Height: %s cm\n" +
+            "Mass: %s kg\n" +
+            "Hair Color: %s\n" +
+            "Eye Color: %s\n" +
+            "Birth Year: %s\n" +
+            "Gender: %s",
+            charName, height, mass, hairColor, eyeColor, birthYear, gender
+        );
     }
     
     private String calculate(String operation, double a, double b) {
@@ -258,26 +294,21 @@ public class LLMToolCaller {
      * These define the schema for each tool that the LLM can call
      */
     
-    private Map<String, Object> getWeatherTool() {
+    private Map<String, Object> getStarWarsTool() {
         return Map.of(
             "type", "function",
             "function", Map.of(
-                "name", "get_weather",
-                "description", "Get the current weather for a location",
+                "name", "search_starwars_character",
+                "description", "Search for a Star Wars character using the SWAPI (Star Wars API). Returns character details like height, mass, hair color, eye color, birth year, and gender.",
                 "parameters", Map.of(
                     "type", "object",
                     "properties", Map.of(
-                        "location", Map.of(
+                        "name", Map.of(
                             "type", "string",
-                            "description", "The city and country, e.g., 'London, UK'"
-                        ),
-                        "unit", Map.of(
-                            "type", "string",
-                            "description", "The unit for temperature",
-                            "enum", List.of("celsius", "fahrenheit")
+                            "description", "The name of the Star Wars character to search for (e.g., 'Luke Skywalker', 'Darth Vader', 'Leia')"
                         )
                     ),
-                    "required", List.of("location")
+                    "required", List.of("name")
                 )
             )
         );
